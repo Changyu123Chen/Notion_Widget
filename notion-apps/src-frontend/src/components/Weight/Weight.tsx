@@ -1,7 +1,7 @@
 // src-frontend/Weight.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Chart from "chart.js/auto";
-
+import 'chartjs-adapter-date-fns';
 type WeightRow = {
   date: string;         // expected 'YYYY-MM-DD' (or any Date-parsable string)
   morning?: number;     // optional

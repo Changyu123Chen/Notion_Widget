@@ -1,8 +1,49 @@
 {
-  "hash": "fcf65abc",
+  "hash": "b6a90552",
   "configHash": "7e5045f7",
-  "lockfileHash": "5448db30",
-  "browserHash": "c8a7b801",
-  "optimized": {},
-  "chunks": {}
+  "lockfileHash": "bb218f25",
+  "browserHash": "0b1600be",
+  "optimized": {
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "125ad6ce",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "7f74786d",
+      "needsInterop": true
+    },
+    "chart.js/auto": {
+      "src": "../../node_modules/chart.js/auto/auto.js",
+      "file": "chart__js_auto.js",
+      "fileHash": "982da4a6",
+      "needsInterop": false
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "c2b8b20e",
+      "needsInterop": true
+    },
+    "chartjs-adapter-date-fns": {
+      "src": "../../node_modules/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.esm.js",
+      "file": "chartjs-adapter-date-fns.js",
+      "fileHash": "d2e5a01f",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-7TTRNAON": {
+      "file": "chunk-7TTRNAON.js"
+    },
+    "chunk-I7K6YDV4": {
+      "file": "chunk-I7K6YDV4.js"
+    },
+    "chunk-BUSYA2B4": {
+      "file": "chunk-BUSYA2B4.js"
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { refreshWeights } from '../Auth/Notion_Weight_DB_Auth/Weight';
+import { refreshWeights } from '../Auth/Notion_Weight_DB_Auth/Weight.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 /**
  * POST /api/refresh-weights
