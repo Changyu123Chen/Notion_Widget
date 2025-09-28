@@ -1,6 +1,6 @@
 import { config } from "dotenv"
 import { Client, isFullDatabase } from "@notionhq/client"
-
+import { toPlain } from "../helper/toPlain";
 config()
 
 const notion = new Client({ auth: process.env.NOTION_KEY! })
@@ -8,8 +8,6 @@ const databseId_TRANSAC = process.env.NOTION_DATABASE_TRANSAC!;
 const databseId_ACCOUNTS = process.env.NOTION_DATABASE_ACCOUNTS!;
 const databseId_DAILY_BALANCE = process.env.NOTION_DATABASE_DAILY_BALANCE!;
 const databseId_BUDGETS = process.env.NOTION_DATABASE_BUDGETS!;
-
-const toPlain = (arr?: any[]) => (arr ?? []).map(t => t.plain_text ?? '').join('');
 
 //helper
 function getTodayBoundsLocal() {
