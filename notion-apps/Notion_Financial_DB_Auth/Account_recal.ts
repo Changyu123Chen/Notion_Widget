@@ -278,36 +278,51 @@ async function computeTodayDeltas(accounts: Record<string, AccountRow>): Promise
     const page: any = p;
     const props: any = page.properties;
 
-    // ---- Idempotency: skip if this transaction has already been applied for its last edit ----
-    const txKey = `${page.id}|${page.last_edited_time}`;
-    const existingKey = props?.['Idempotency Key']?.rich_text ? toPlain(props['Idempotency Key'].rich_text) : '';
-    if (existingKey === txKey) {
-      // already processed for this last edit, skip
-      continue;
-    }
     // reset touched flag for this transaction
     touchedTx = false;
 
-    const type = props?.Type?.select?.name || 'Unknown';
+    // Extract normalized fields used for idempotency
+    const typeName = (props?.Type?.select?.name || '').trim();
+    const typeLc = typeName.toLowerCase();
     const fromAcc = readAccountName(props?.['From Account']);
     const toAcc = readAccountName(props?.['To Account']);
     const cad = readNumber(props?.['CAD Amount']);
     const usd = readNumber(props?.['USD Amount']);
+    const dateStr = props?.['Date']?.date?.start || '';
 
-    switch (type) {
-      case 'Expense': {
+    // Stable idempotency fingerprint (independent of last_edited_time and of this property itself)
+    const fp = JSON.stringify({
+      type: typeLc,
+      from: fromAcc || '',
+      to: toAcc || '',
+      cad: cad || 0,
+      usd: usd || 0,
+      date: dateStr
+    });
+
+    const existingKey = props?.['Idempotency Key']?.rich_text
+      ? toPlain(props['Idempotency Key'].rich_text)
+      : '';
+
+    if (existingKey === fp) {
+      // already processed for this specific field set, skip
+      continue;
+    }
+
+    switch (typeLc) {
+      case 'expense': {
         // reduce the source account in its own currency
         if (cad > 0 && accountCurrency(fromAcc) === 'CAD') add(fromAcc!, -cad);
         if (usd > 0 && accountCurrency(fromAcc) === 'USD') add(fromAcc!, -usd);
         break;
       }
-      case 'Income': {
+      case 'income': {
         // increase the target account in its own currency
         if (cad > 0 && accountCurrency(toAcc) === 'CAD') add(toAcc!, +cad);
         if (usd > 0 && accountCurrency(toAcc) === 'USD') add(toAcc!, +usd);
         break;
       }
-      case 'Transfer': {
+      case 'transfer': {
         const fromCcy = accountCurrency(fromAcc);
         const toCcy = accountCurrency(toAcc);
         if (!fromCcy || !toCcy) break;
@@ -333,7 +348,7 @@ async function computeTodayDeltas(accounts: Record<string, AccountRow>): Promise
         }
         break;
       }
-      case 'Repayment': {
+      case 'repayment': {
         // treat as asset -> liability, but still per-currency lanes
         if (cad > 0) {
           if (accountCurrency(fromAcc) === 'CAD') add(fromAcc!, -cad);
@@ -356,7 +371,7 @@ async function computeTodayDeltas(accounts: Record<string, AccountRow>): Promise
         await notion.pages.update({
           page_id: page.id,
           properties: {
-            'Idempotency Key': { rich_text: [{ text: { content: txKey } }] },
+            'Idempotency Key': { rich_text: [{ text: { content: fp } }] },
           },
         });
       } catch (e) {
