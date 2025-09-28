@@ -1,10 +1,8 @@
 import { config } from "dotenv"
-import express from "express"
 import { Client, isFullDatabase } from "@notionhq/client"
 
 config()
 
-const app = express()
 const notion = new Client({ auth: process.env.NOTION_KEY! })
 const databseId_TRANSAC = process.env.NOTION_DATABASE_TRANSAC!;
 const databseId_ACCOUNTS = process.env.NOTION_DATABASE_ACCOUNTS!;
@@ -263,21 +261,32 @@ async function computeTodayDeltas(accounts: Record<string, AccountRow>): Promise
       { property: 'Date', date: { before: tomorrow } },
     ],
   } as const;
-
-  const add = (name: string | null, amount: number) => {
-    if (!name || !amount) return;
-    deltas[name] = (deltas[name] ?? 0) + amount;
-  };
-
   const accountCurrency = (name: string | null): 'CAD' | 'USD' | null => {
     if (!name) return null;
     const acc = accounts[name];
     return acc ? (acc.currency as 'CAD' | 'USD') : null;
   };
 
+  let touchedTx = false; // marks that current transaction produced a delta
+  const add = (name: string | null, amount: number) => {
+    if (!name || !amount) return;
+    deltas[name] = (deltas[name] ?? 0) + amount;
+    touchedTx = true;
+  };
+
   for await (const p of iterateQuery(databseId_TRANSAC, { filter })) {
     const page: any = p;
     const props: any = page.properties;
+
+    // ---- Idempotency: skip if this transaction has already been applied for its last edit ----
+    const txKey = `${page.id}|${page.last_edited_time}`;
+    const existingKey = props?.['Idempotency Key']?.rich_text ? toPlain(props['Idempotency Key'].rich_text) : '';
+    if (existingKey === txKey) {
+      // already processed for this last edit, skip
+      continue;
+    }
+    // reset touched flag for this transaction
+    touchedTx = false;
 
     const type = props?.Type?.select?.name || 'Unknown';
     const fromAcc = readAccountName(props?.['From Account']);
@@ -340,6 +349,20 @@ async function computeTodayDeltas(accounts: Record<string, AccountRow>): Promise
         // ignore others
         break;
     }
+
+    // if this transaction produced any delta, mark it as processed by storing the idempotency key
+    if (touchedTx) {
+      try {
+        await notion.pages.update({
+          page_id: page.id,
+          properties: {
+            'Idempotency Key': { rich_text: [{ text: { content: txKey } }] },
+          },
+        });
+      } catch (e) {
+        console.error('Failed to set Idempotency Key for tx', page.id, e);
+      }
+    }
   }
 
   return deltas;
@@ -374,7 +397,7 @@ async function updateAccounts(accounts: Record<string, AccountRow>, deltas: Delt
   }
 }
 
-(async () => {
+export async function runDailyRecalc() {
   try {
     const accounts = await loadAccounts();
     if (!Object.keys(accounts).length) {
@@ -401,4 +424,4 @@ async function updateAccounts(accounts: Record<string, AccountRow>, deltas: Delt
   } catch (e) {
     console.error(e);
   }
-})();
+}
