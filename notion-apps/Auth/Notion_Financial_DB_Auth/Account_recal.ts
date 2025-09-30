@@ -1,6 +1,6 @@
 import { config } from "dotenv"
 import { Client, isFullDatabase } from "@notionhq/client"
-import { toPlain } from "../helper/toPlain";
+import { toPlain } from "../helper/toPlain.js";
 config()
 
 const notion = new Client({ auth: process.env.NOTION_KEY! })

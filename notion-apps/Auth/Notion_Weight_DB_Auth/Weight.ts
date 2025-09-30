@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { Client } from "@notionhq/client";
 import { put } from '@vercel/blob';
-import { toPlain } from "../helper/toPlain";
+import { toPlain } from "../helper/toPlain.js";
 
 config();
 
