@@ -251,13 +251,9 @@ type DeltaMap = Record<string, number>; // per account (in that account's own cu
 
 async function computeTodayDeltas(accounts: Record<string, AccountRow>): Promise<DeltaMap> {
   const deltas: DeltaMap = {};
-  const { today, tomorrow } = getTodayBoundsLocal();
-
   const filter = {
-    and: [
-      { property: 'Date', date: { on_or_after: today } },
-      { property: 'Date', date: { before: tomorrow } },
-    ],
+    property: 'Idempotency Key',
+    rich_text: { is_empty: true },
   } as const;
   const accountCurrency = (name: string | null): 'CAD' | 'USD' | null => {
     if (!name) return null;
