@@ -26,8 +26,8 @@ function fmtLabel(d: string) {
   const dt = parseDate(d);
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
-
-export default function Weight({ apiUrl = "/api/get-weights" }: Props) {
+const baseApiUrl = import.meta.env.VITE_API_URL;
+export default function Weight({ apiUrl = `${baseApiUrl}/get-weights` }: Props) {
   const [rows, setRows] = useState<WeightRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const morningCanvasRef = useRef<HTMLCanvasElement | null>(null);
