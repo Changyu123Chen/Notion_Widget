@@ -1,10 +1,10 @@
-import Weight from "./components/Weight/Weight";
+// import Weight from "./components/Weight/Weight";
 
 export default function App() {
   return (
     <div>
-      <h1>My Notion Widgets</h1>
-      <Weight />
+      <h2>This is a temp page will change to correct one later</h2>
+      {/* <Weight /> */}
     </div>
   );
 }
