@@ -78,6 +78,29 @@ async function computeTodayCadExpense(): Promise<number> {
   return total;
 }
 
+// Sum CAD expenses for all UNPROCESSED transactions (Idempotency Key is empty), grouped by transaction month (YYYY-MM)
+async function collectUnprocessedExpenseCadByMonth(): Promise<Record<string, number>> {
+  const filter = {
+    and: [
+      { property: 'Idempotency Key', rich_text: { is_empty: true } },
+      { property: 'Type', select: { equals: 'Expense' } },
+    ],
+  } as const;
+
+  const sum: Record<string, number> = {};
+  for await (const p of iterateQuery(databseId_TRANSAC, { filter })) {
+    const props: any = (p as any).properties;
+    const dateStr = props?.['Date']?.date?.start || '';
+    if (!dateStr) continue;
+    const month = dateStr.slice(0, 7); // YYYY-MM
+    const cad = readNumber(props?.['CAD Amount']);
+    if (typeof cad === 'number' && cad > 0) {
+      sum[month] = (sum[month] ?? 0) + cad;
+    }
+  }
+  return sum;
+}
+
 async function upsertMonthlyBudgetByExpense(expenseCad: number, date: Date = new Date()) {
   const month = ym(date); // YYYY-MM
 
@@ -414,6 +437,9 @@ export async function runDailyRecalc() {
       return;
     }
 
+    // pre-compute budget impacts for all unprocessed Expense txs (by month)
+    const expenseByMonth = await collectUnprocessedExpenseCadByMonth();
+
     const deltas = await computeTodayDeltas(accounts);
     if (!Object.keys(deltas).length) {
       console.log('No transactions for today. Will still write Daily Balances rows with delta=0.');
@@ -421,10 +447,12 @@ export async function runDailyRecalc() {
     const todayIndex = await loadTodayDailyBalanceIndex();
     await updateAccounts(accounts, deltas, todayIndex);
 
-    // Update Budgets table based on today's CAD expenses
+    // Update Budgets table based on the unprocessed Expense transactions handled in this run (grouped by their own months)
     try {
-      const expenseCad = await computeTodayCadExpense();
-      await upsertMonthlyBudgetByExpense(expenseCad);
+      for (const [month, amount] of Object.entries(expenseByMonth)) {
+        const d = new Date(`${month}-01T00:00:00`);
+        await upsertMonthlyBudgetByExpense(amount, d);
+      }
     } catch (e) {
       console.error('Budgets update failed:', e);
     }
